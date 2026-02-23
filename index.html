@@ -1,0 +1,569 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- APP READY META TAGS -->
+    <meta name="theme-color" content="#050810">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Liquid Sort Premium</title>
+    
+    <style>
+        /* ==========================================
+           100% OFFLINE READY CUSTOM CSS 
+           (No Tailwind, No Google Fonts)
+           ========================================== */
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #050810; 
+            color: #e2e8f0; 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden; 
+            touch-action: manipulation; 
+            user-select: none; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* HUD Header */
+        header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 50;
+            background: linear-gradient(to bottom, rgba(5,8,16,0.95) 40%, transparent);
+        }
+        
+        .hud-label {
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+        .hud-value {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            color: #ffffff;
+            line-height: 1.1;
+        }
+
+        /* Progress Bar */
+        .progress-wrapper {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 24px;
+            height: 8px;
+            background-color: rgba(30, 41, 59, 0.8);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #38bdf8, #6366f1);
+            transition: width 0.7s ease-out;
+            width: 0%;
+        }
+
+        /* Game Canvas */
+        main {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px 110px 20px;
+        }
+
+        #tube-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: center;
+            gap: 48px 24px; 
+            max-width: 768px;
+            width: 100%;
+        }
+
+        /* Footer Controls */
+        footer {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            padding: 24px 20px 32px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            z-index: 50;
+            background: linear-gradient(to top, #050810 20%, transparent);
+        }
+
+        .ctrl-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            color: inherit;
+        }
+        .ctrl-btn:active {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(0.92);
+        }
+        .ctrl-btn svg { width: 28px; height: 28px; transition: transform 0.3s; }
+        .ctrl-btn span {
+            font-size: 9px;
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            margin-top: 6px;
+        }
+        #btn-undo svg { color: #cbd5e1; }
+        #btn-undo span { color: #94a3b8; }
+        #btn-undo:active svg { transform: rotate(-45deg); }
+        
+        #btn-reset svg { color: #fb7185; }
+        #btn-reset span { color: #fb7185; }
+        #btn-reset:active svg { transform: rotate(180deg); transition: transform 0.5s; }
+        
+        #btn-hint svg { color: #facc15; }
+        #btn-hint span { color: #facc15; }
+        #btn-hint:active svg { transform: scale(1.1); }
+
+        /* ==========================================
+           REALISTIC TUBE & GLASS EFFECTS
+           ========================================== */
+        .tube-wrapper {
+            position: relative;
+            padding: 15px 10px;
+            filter: drop-shadow(0 25px 25px rgba(0,0,0,0.6));
+            perspective: 1000px;
+        }
+
+        .tube {
+            width: 56px;
+            height: 190px;
+            position: relative;
+            border-radius: 0 0 32px 32px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 3px solid rgba(255, 255, 255, 0.15);
+            border-top: none;
+            overflow: hidden; 
+            mask-image: linear-gradient(to bottom, transparent 2%, black 6%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 2%, black 6%);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                        border-color 0.3s, box-shadow 0.3s;
+            z-index: 10;
+            transform-origin: bottom center;
+            cursor: pointer;
+        }
+
+        .tube::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 6px; right: 12px; bottom: 4px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 30%, transparent 60%);
+            border-radius: inherit;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .tube::after {
+            content: '';
+            position: absolute;
+            top: -3px; left: -3px; right: -3px;
+            height: 6px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+            pointer-events: none;
+        }
+
+        .tube-wrapper.selected .tube {
+            transform: translateY(-30px);
+            border-color: rgba(14, 165, 233, 0.6);
+            box-shadow: 0 0 25px rgba(14, 165, 233, 0.3), inset 0 -10px 20px rgba(14, 165, 233, 0.1);
+        }
+
+        .tube-wrapper.hint-active .tube { animation: hint-pulse 1s infinite alternate; }
+
+        @keyframes hint-pulse {
+            from { border-color: rgba(234, 179, 8, 0.4); box-shadow: 0 0 15px rgba(234, 179, 8, 0.2); }
+            to { border-color: rgba(234, 179, 8, 1); box-shadow: 0 0 30px rgba(234, 179, 8, 0.6); }
+        }
+
+        .tipping-right { transform: rotate(75deg) translate(30px, -70px) !important; z-index: 50; }
+        .tipping-left { transform: rotate(-75deg) translate(-30px, -70px) !important; z-index: 50; }
+
+        /* ==========================================
+           LIQUID LAYERS & MENISCUS
+           ========================================== */
+        .liquid-container {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        .liquid-block {
+            width: 100%;
+            height: 0%; 
+            position: relative;
+            transition: height 0.4s ease-in-out;
+            box-shadow: inset 5px 0 10px rgba(0,0,0,0.2), inset -5px 0 15px rgba(255,255,255,0.1);
+        }
+
+        .liquid-block.is-top::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 0;
+            width: 100%;
+            height: 12px;
+            background: inherit;
+            border-radius: 50%;
+            filter: brightness(1.25) contrast(1.1);
+            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3), 0 2px 4px rgba(255,255,255,0.2);
+            z-index: 2;
+            transition: opacity 0.2s;
+            opacity: 1;
+        }
+
+        .liquid-block[style*="height: 0%"]::after,
+        .liquid-block[style*="height: 0px"]::after {
+            opacity: 0;
+        }
+
+        /* ==========================================
+           SVG POURING STREAM
+           ========================================== */
+        #svg-layer {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 40;
+        }
+        #pouring-path {
+            transition: opacity 0.2s ease;
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        /* ==========================================
+           VICTORY SCREEN MODAL
+           ========================================== */
+        #win-screen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        #win-screen.active {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        #win-content {
+            transform: scale(0.9);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: center;
+        }
+        #win-screen.active #win-content {
+            transform: scale(1);
+        }
+        
+        .win-title {
+            font-size: 48px;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: -0.05em;
+            background: linear-gradient(to bottom, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+            margin: 0 0 30px 0;
+        }
+
+        .star-container {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+        .star-container svg { width: 56px; height: 56px; }
+        .star-gold { color: #facc15; filter: drop-shadow(0 0 15px rgba(250,204,21,0.8)); }
+        .star-gray { color: #475569; }
+
+        .win-stats {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            display: inline-block;
+            padding: 10px 24px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #cbd5e1;
+            margin-bottom: 40px;
+        }
+        .win-stats span {
+            color: #38bdf8;
+            font-weight: 900;
+        }
+
+        .btn-next {
+            display: block;
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto;
+            padding: 20px 32px;
+            background: linear-gradient(to right, #0ea5e9, #6366f1);
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 900;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(14,165,233,0.4);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-next:active { transform: scale(0.95); }
+
+        @media (max-width: 400px) {
+            .tube { width: 48px; height: 160px; }
+            #tube-grid { gap: 32px 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Premium HUD -->
+    <header>
+        <div style="display: flex; flex-direction: column;">
+            <span class="hud-label" style="color: #38bdf8;">Level</span>
+            <span id="level-num" class="hud-value">01</span>
+        </div>
+        
+        <div class="progress-wrapper">
+            <div id="level-progress" class="progress-fill"></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: flex-end;">
+            <span class="hud-label" style="color: #818cf8;">Moves</span>
+            <div id="move-count" class="hud-value">0</div>
+        </div>
+    </header>
+
+    <!-- Game Canvas -->
+    <main>
+        <div id="tube-grid">
+            <!-- Tubes generated dynamically by JS -->
+        </div>
+
+        <svg id="svg-layer">
+            <path id="pouring-path" d="" fill="none" stroke-width="12" stroke-linecap="round" opacity="0" />
+        </svg>
+    </main>
+
+    <!-- Bottom Controls -->
+    <footer>
+        <div onclick="game.undo()" class="ctrl-btn" id="btn-undo">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+            <span>Undo</span>
+        </div>
+        <div onclick="game.restart()" class="ctrl-btn" id="btn-reset">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span>Reset</span>
+        </div>
+        <div onclick="game.showHint()" class="ctrl-btn" id="btn-hint">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9.663 17h4.674a1 1 0 00.996-1.09L14.535 7.18a5 5 0 00-9.92 0l-.798 8.73A1 1 0 004.813 17h4.85m0 0a2 2 0 004 0m-4 0a2 2 0 114 0"/></svg>
+            <span>Hint</span>
+        </div>
+    </footer>
+
+    <!-- Victory Screen Modal -->
+    <div id="win-screen">
+        <div id="win-content">
+            <div style="font-size: 72px; margin-bottom: 24px; animation: bounce 2s infinite;">🏆</div>
+            <h2 class="win-title">LEVEL CLEARED!</h2>
+            
+            <div class="star-container" id="star-container">
+                <!-- Stars injected here -->
+            </div>
+
+            <div class="win-stats">
+                Completed in <span id="final-moves">0</span> moves
+            </div>
+
+            <button onclick="game.nextLevel()" class="btn-next">
+                NEXT LEVEL
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN GAME SCRIPT -->
+    <script>
+        const CONFIG = {
+            CAPACITY: 4,
+            COLORS: [
+                '#FF3B30', '#34C759', '#007AFF', '#FFCC00', 
+                '#AF52DE', '#FF9500', '#5AC8FA', '#FF2D55', 
+                '#5856D6', '#A2845E'
+            ],
+            POUR_SPEED_MS: 400,
+            TILT_SPEED_MS: 300
+        };
+
+        class PremiumGame {
+            constructor() {
+                // LOAD LOCAL STORAGE PROGRESS
+                const saved = localStorage.getItem("liquidSortProgress");
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        this.level = data.level || 1;
+                    } catch(e) {
+                        this.level = 1;
+                    }
+                } else {
+                    this.level = 1;
+                }
+
+                this.moves = 0;
+                this.history = [];
+                this.isAnimating = false;
+                this.selectedIdx = null;
+                this.tubes = [];
+                
+                // Cache DOM
+                this.grid = document.getElementById('tube-grid');
+                this.svgPath = document.getElementById('pouring-path');
+                this.winScreen = document.getElementById('win-screen');
+                
+                this.init();
+            }
+
+            // SAVE LOCAL STORAGE PROGRESS
+            saveProgress() {
+                localStorage.setItem("liquidSortProgress", JSON.stringify({
+                    level: this.level
+                }));
+            }
+
+            init() {
+                this.moves = 0;
+                this.history = [];
+                this.selectedIdx = null;
+                this.isAnimating = false;
+                this.loadLevelData(this.level);
+                this.buildDOM();
+                this.updateRenderer();
+                this.updateHUD();
+                document.getElementById('btn-undo').style.opacity = '0.5';
+            }
+
+            loadLevelData(lvl) {
+                const baseColors = 3;
+                const colorCount = Math.min(CONFIG.COLORS.length, baseColors + Math.floor((lvl - 1) / 2));
+                
+                let colorPool = [];
+                for(let i = 0; i < colorCount; i++) {
+                    for(let j = 0; j < CONFIG.CAPACITY; j++) {
+                        colorPool.push(i);
+                    }
+                }
+                
+                for (let i = colorPool.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [colorPool[i], colorPool[j]] = [colorPool[j], colorPool[i]];
+                }
+
+                this.tubes = [];
+                for(let i = 0; i < colorCount; i++) {
+                    this.tubes.push(colorPool.splice(0, CONFIG.CAPACITY));
+                }
+                for(let i = 0; i < 2; i++) {
+                    this.tubes.push([]);
+                }
+
+                this.initialState = JSON.parse(JSON.stringify(this.tubes));
+            }
+
+            buildDOM() {
+                this.grid.innerHTML = '';
+                
+                this.tubes.forEach((_, idx) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'tube-wrapper';
+                    wrapper.id = `wrapper-${idx}`;
+                    
+                    const tube = document.createElement('div');
+                    tube.className = 'tube';
+                    tube.onclick = () => this.handleInteraction(idx);
+
+                    const liquidCont = document.createElement('div');
+                    liquidCont.className = 'liquid-container';
+                    liquidCont.id = `liquid-${idx}`;
+
+                    for(let i = 0; i < CONFIG.CAPACITY; i++) {
+                        const block = document.createElement('div');
+                        block.className = 'liquid-block';
+                        liquidCont.appendChild(block);
+                    }
+
+                    tube.appendChild(liquidCont);
+                    wrapper.appendChild(tube);
+                    this.grid.appendChild(wrapper);
+                });
+            }
+
+            // EXACT FIX 1: The fully replaced, robust rendering engine
+            updateRenderer() {
+                this.tubes.forEach((tubeData, tubeIdx) => {
+                    const wrapper = document.getElementById(`wrapper-${tubeIdx}`);
+                    const liquidCont = document.getElementById(`liquid-${tubeIdx}`);
+                    const blocks = liquidCont.children;
+
+                    if (this.selectedIdx === tubeIdx) {
+                        wrapper.classList.add('selected');
+                    } else {
+                        wrapper.classList.remove('selected');
+                        wrapper.classList.remove('hint-active');
+                    }
+
+                    for (let i = 0; i < CONFIG.CAPACITY; i++) {
+                        const block = blocks[i];
+
+                        if (i < tubeData.length) {
+                            block.style.height = `${100 / CONFIG.CAPACITY}%`;
+                            bl
